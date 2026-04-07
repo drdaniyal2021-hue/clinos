@@ -55,7 +55,9 @@ export default async function DashboardPage() {
               Guide a patient through all 8 clinical steps
             </p>
           </div>
-          <Button>New Encounter →</Button>
+          <a href="/dashboard/encounters/new">
+            <Button>New Encounter →</Button>
+          </a>
         </CardContent>
       </Card>
 
@@ -94,29 +96,31 @@ export default async function DashboardPage() {
         ) : (
           <div className="space-y-2">
             {encounters.map((enc: Encounter) => (
-              <Card key={enc.id}>
-                <CardContent className="pt-4 pb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{enc.chief_complaint}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {enc.condition_key.replace(/_/g, ' ')} · {enc.mode.toUpperCase()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={
-                      enc.severity === 'critical' ? 'severity-critical' :
-                      enc.severity === 'unstable' ? 'severity-unstable' :
-                      enc.severity === 'stable'   ? 'severity-stable'   :
-                      'bg-muted text-muted-foreground'
-                    }>
-                      {enc.severity.toUpperCase()}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {enc.current_step}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
+              <a key={enc.id} href={`/dashboard/encounters/${enc.id}`} className="block">
+                <Card className="hover:border-primary/40 transition-colors cursor-pointer">
+                  <CardContent className="pt-4 pb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{enc.chief_complaint}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {enc.condition_key.replace(/_/g, ' ')} · {enc.mode.toUpperCase()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={
+                        enc.severity === 'critical' ? 'severity-critical' :
+                        enc.severity === 'unstable' ? 'severity-unstable' :
+                        enc.severity === 'stable'   ? 'severity-stable'   :
+                        'bg-muted text-muted-foreground'
+                      }>
+                        {enc.severity.toUpperCase()}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {enc.current_step}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
             ))}
           </div>
         )}
