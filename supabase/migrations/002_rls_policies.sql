@@ -1,5 +1,6 @@
 -- ============================================================
 -- ClinOS RLS Policies — Migration 002
+-- IDEMPOTENT: drops existing policies before recreating them
 -- Row Level Security: users can only access their own data
 -- ============================================================
 
@@ -10,6 +11,20 @@ alter table public.encounter_steps     enable row level security;
 alter table public.calculator_results  enable row level security;
 alter table public.encounter_audit_log enable row level security;
 alter table public.conditions          enable row level security;
+
+-- ─── Drop existing policies (idempotent cleanup) ──────────
+drop policy if exists "Users can view own profile"                              on public.profiles;
+drop policy if exists "Users can update own profile"                            on public.profiles;
+drop policy if exists "Users can view own encounters"                           on public.encounters;
+drop policy if exists "Users can create encounters"                             on public.encounters;
+drop policy if exists "Users can update own encounters"                         on public.encounters;
+drop policy if exists "Users can view steps for own encounters"                 on public.encounter_steps;
+drop policy if exists "Users can create steps for own encounters"               on public.encounter_steps;
+drop policy if exists "Users can update steps for own encounters"               on public.encounter_steps;
+drop policy if exists "Users can manage calculator results for own encounters"  on public.calculator_results;
+drop policy if exists "Users can view own audit log"                            on public.encounter_audit_log;
+drop policy if exists "Users can insert own audit log"                          on public.encounter_audit_log;
+drop policy if exists "Anyone can read conditions"                              on public.conditions;
 
 -- ─── PROFILES ─────────────────────────────────────────────
 create policy "Users can view own profile"

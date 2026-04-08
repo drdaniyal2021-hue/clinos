@@ -1,5 +1,6 @@
 -- ============================================================
 -- ClinOS Database Schema — Migration 001: Initial
+-- IDEMPOTENT: safe to run multiple times (uses IF NOT EXISTS)
 -- ============================================================
 -- Run this in Supabase SQL Editor (Project > SQL Editor > New Query)
 -- ============================================================
@@ -9,7 +10,7 @@ create extension if not exists "uuid-ossp";
 create extension if not exists "pg_trgm";
 
 -- ─── PROFILES ─────────────────────────────────────────────
-create table public.profiles (
+create table if not exists public.profiles (
   id          uuid references auth.users(id) on delete cascade primary key,
   full_name   text,
   role        text not null default 'junior_doctor'
@@ -25,7 +26,7 @@ create table public.profiles (
 comment on table public.profiles is 'Clinical user profiles extending auth.users';
 
 -- ─── ENCOUNTERS ───────────────────────────────────────────
-create table public.encounters (
+create table if not exists public.encounters (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references public.profiles(id) on delete cascade,
   patient_age     int check (patient_age between 0 and 130),
@@ -51,12 +52,11 @@ create table public.encounters (
 
 comment on table public.encounters is 'One row per patient encounter — full 8-step workflow session';
 
-create index encounters_user_id_idx    on public.encounters(user_id);
-create index encounters_status_idx     on public.encounters(status);
-create index encounters_created_at_idx on public.encounters(created_at desc);
-
+create index if not exists encounters_user_id_idx    on public.encounters(user_id);
+create index if not exists encounters_status_idx     on public.encounters(status);
+create index if not exists encounters_created_at_idx on public.encounters(created_at desc);
 -- ─── ENCOUNTER STEPS ──────────────────────────────────────
-create table public.encounter_steps (
+create table if not exists public.encounter_steps (
   id            uuid primary key default gen_random_uuid(),
   encounter_id  uuid not null references public.encounters(id) on delete cascade,
   step          text not null
@@ -74,10 +74,10 @@ create table public.encounter_steps (
 );
 
 comment on table public.encounter_steps is 'One row per step per encounter. JSONB data is flexible per step type.';
-create index encounter_steps_encounter_id_idx on public.encounter_steps(encounter_id);
+create index if not exists encounter_steps_encounter_id_idx on public.encounter_steps(encounter_id);
 
 -- ─── CALCULATOR RESULTS ───────────────────────────────────
-create table public.calculator_results (
+create table if not exists public.calculator_results (
   id            uuid primary key default gen_random_uuid(),
   encounter_id  uuid not null references public.encounters(id) on delete cascade,
   calculator    text not null,
@@ -86,10 +86,10 @@ create table public.calculator_results (
   created_at    timestamptz not null default now()
 );
 
-create index calculator_results_encounter_id_idx on public.calculator_results(encounter_id);
+create index if not exists calculator_results_encounter_id_idx on public.calculator_results(encounter_id);
 
 -- ─── AUDIT LOG ────────────────────────────────────────────
-create table public.encounter_audit_log (
+create table if not exists public.encounter_audit_log (
   id            uuid primary key default gen_random_uuid(),
   encounter_id  uuid references public.encounters(id) on delete set null,
   user_id       uuid references public.profiles(id) on delete set null,
@@ -100,11 +100,11 @@ create table public.encounter_audit_log (
 );
 
 comment on table public.encounter_audit_log is 'Immutable safety audit trail. Never delete rows.';
-create index audit_log_encounter_id_idx on public.encounter_audit_log(encounter_id);
-create index audit_log_created_at_idx   on public.encounter_audit_log(created_at desc);
+create index if not exists audit_log_encounter_id_idx on public.encounter_audit_log(encounter_id);
+create index if not exists audit_log_created_at_idx   on public.encounter_audit_log(created_at desc);
 
 -- ─── CONDITIONS REGISTRY ──────────────────────────────────
-create table public.conditions (
+create table if not exists public.conditions (
   key          text primary key,
   display_name text not null,
   category     text not null,
@@ -134,12 +134,17 @@ insert into public.conditions (key, display_name, category, phase, guidelines) v
   ('hypertensive_crisis',   'Hypertensive Crisis',        'Cardiology',      3, '{ESC,AHA}'),
   ('obs_emergency',         'Obstetric Emergency',        'Obstetrics',      3, '{NICE,WHO}'),
   ('paediatric_emergency',  'Paediatric Emergency',       'Paediatrics',     3, '{NICE,APLS}'),
-  ('psychiatric_emergency', 'Psychiatric Emergency',      'Psychiatry',      3, '{NICE,APA}');
+  ('psychiatric_emergency', 'Psychiatric Emergency',      'Psychiatry',      3, '{NICE,APA}')
+on conflict (key) do nothing;
 
 -- ─── TRIGGERS: updated_at ─────────────────────────────────
 create or replace function public.handle_updated_at()
 returns trigger language plpgsql as $$
 begin new.updated_at = now(); return new; end; $$;
+
+drop trigger if exists profiles_updated_at      on public.profiles;
+drop trigger if exists encounters_updated_at    on public.encounters;
+drop trigger if exists encounter_steps_updated_at on public.encounter_steps;
 
 create trigger profiles_updated_at
   before update on public.profiles
@@ -158,9 +163,12 @@ create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, full_name)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', ''));
+  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', ''))
+  on conflict (id) do nothing;
   return new;
 end; $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
 
 create trigger on_auth_user_created
   after insert on auth.users
