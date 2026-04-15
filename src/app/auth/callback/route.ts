@@ -7,17 +7,20 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
-  const code  = searchParams.get('code')
-  const next  = searchParams.get('next') ?? '/dashboard'
+  const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
+
+  // Guard against open-redirect attacks: next must be a relative path
+  const safePath = next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+      return NextResponse.redirect(`${origin}${safePath}`)
     }
   }
 
   // Auth failed — redirect to login with error
-  return NextResponse.redirect(`${origin}/login?error=Authentication failed`)
+  return NextResponse.redirect(`${origin}/login?error=Authentication+failed`)
 }
