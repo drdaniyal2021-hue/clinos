@@ -23,7 +23,7 @@ export async function signUp(formData: FormData) {
 
   if (error) redirect(`/signup?error=${encodeURIComponent(error.message)}`)
 
-  redirect('/signup?message=Check your email to confirm your account')
+  redirect(`/auth/verify-email?email=${encodeURIComponent(email)}`)
 }
 
 // ─── Sign In ──────────────────────────────────────────────
