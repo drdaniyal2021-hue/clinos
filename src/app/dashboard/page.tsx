@@ -21,6 +21,8 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single() as { data: Profile | null }
 
+  if (!profile?.onboarded) redirect('/onboarding')
+
   const { data: encounters } = await supabase
     .from('encounters')
     .select('*')
