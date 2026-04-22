@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { saveOnboarding } from './actions'
+
+type ProfileCheck = { onboarded: boolean; full_name: string | null }
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,7 +41,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     .from('profiles')
     .select('onboarded, full_name')
     .eq('id', user.id)
-    .single()
+    .single() as { data: ProfileCheck | null }
 
   // Already onboarded — skip ahead
   if (profile?.onboarded) redirect('/dashboard')

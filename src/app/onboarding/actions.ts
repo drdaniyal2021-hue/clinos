@@ -2,6 +2,9 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/lib/supabase/types'
+
+type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient()
@@ -13,10 +16,13 @@ export async function saveOnboarding(formData: FormData) {
   const hospital  = (formData.get('hospital')  as string) || null
   const country   = (formData.get('country')   as string) || null
 
-  const { error } = await supabase
+  // @supabase/ssr generic limitation: .update() resolves to never on this client type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const client = supabase as any
+  const { error } = await client
     .from('profiles')
     .update({ specialty, hospital, country, onboarded: true })
-    .eq('id', user.id)
+    .eq('id', user.id) as { error: { message: string } | null }
 
   if (error) redirect(`/onboarding?error=${encodeURIComponent(error.message)}`)
 
