@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import Link from 'next/link'
 import type { Database } from '@/lib/supabase/types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -50,21 +49,15 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const { error, message } = await searchParams
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="p-6">
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Dashboard
-          </Link>
-          <h1 className="text-xl font-bold mt-1">Profile Settings</h1>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold">Profile Settings</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
       </div>
 
-      <div className="max-w-sm space-y-6">
+      <div className="max-w-sm space-y-4">
 
-        {/* Status messages */}
         {error && (
           <div className="severity-critical rounded-md px-3 py-2 text-sm">
             {decodeURIComponent(error)}
@@ -79,7 +72,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <Card>
           <CardHeader className="pb-2">
             <p className="text-sm font-medium">Account details</p>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
           </CardHeader>
           <CardContent>
             <form action={saveSettings} className="space-y-4">

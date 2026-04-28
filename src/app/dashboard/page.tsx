@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { signOut } from '@/app/auth/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,21 +30,16 @@ export default async function DashboardPage() {
     .limit(5) as { data: Encounter[] | null }
 
   return (
-    <div className="min-h-screen bg-background p-6 space-y-8">
+    <div className="p-6 space-y-8">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Clin<span className="text-primary">OS</span>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Welcome back, {profile?.full_name || user.email}
-          </p>
-        </div>
-        <form action={signOut}>
-          <Button variant="ghost" size="sm" type="submit">Sign out</Button>
-        </form>
+      {/* Welcome */}
+      <div>
+        <h2 className="text-lg font-semibold">
+          Welcome back, {profile?.full_name?.split(' ')[0] || 'Doctor'}
+        </h2>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          {profile?.specialty ? `${profile.specialty} · ${profile.hospital || 'ClinOS'}` : 'ClinOS Dashboard'}
+        </p>
       </div>
 
       {/* Start Encounter CTA */}
