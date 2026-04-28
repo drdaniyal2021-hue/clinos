@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,20 +11,19 @@ type Encounter = Database['public']['Tables']['encounters']['Row']
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
+  // Auth + onboarding guards handled by dashboard/layout.tsx
+  // Page fetches full profile for specialty/hospital display
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single() as { data: Profile | null }
-
-  if (!profile?.onboarded) redirect('/onboarding')
 
   const { data: encounters } = await supabase
     .from('encounters')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', user!.id)
     .order('created_at', { ascending: false })
     .limit(5) as { data: Encounter[] | null }
 

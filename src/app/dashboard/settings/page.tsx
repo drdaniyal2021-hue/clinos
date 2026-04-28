@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { saveSettings } from './actions'
 import { Button } from '@/components/ui/button'
@@ -34,17 +33,15 @@ interface SettingsPageProps {
 }
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
+  // Auth + onboarding guards handled by dashboard/layout.tsx
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single() as { data: Profile | null }
-
-  if (!profile?.onboarded) redirect('/onboarding')
 
   const { error, message } = await searchParams
 
@@ -53,7 +50,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
       <div className="mb-6">
         <h1 className="text-xl font-bold">Profile Settings</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{user!.email}</p>
       </div>
 
       <div className="max-w-sm space-y-4">
