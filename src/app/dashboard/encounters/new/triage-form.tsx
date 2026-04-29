@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-// ── Types ───────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
 type Condition = {
   key: string
   display_name: string
@@ -22,8 +22,17 @@ type Condition = {
 }
 
 type SeverityLevel = 'critical' | 'unstable' | 'stable'
+type PatientSex    = 'male' | 'female' | 'other' | 'unknown'
 
-// ── Severity card config ─────────────────────────────────────────
+// ── Patient sex options ────────────────────────────────────────────────────
+const SEX_OPTIONS: { value: PatientSex; label: string }[] = [
+  { value: 'male',    label: 'Male'    },
+  { value: 'female',  label: 'Female'  },
+  { value: 'other',   label: 'Other'   },
+  { value: 'unknown', label: 'Unknown' },
+]
+
+// ── Severity card config ───────────────────────────────────────────────────
 const SEVERITY_OPTIONS: {
   value: SeverityLevel
   label: string
@@ -58,27 +67,28 @@ const SEVERITY_OPTIONS: {
   },
 ]
 
-// ── Arrival mode options ─────────────────────────────────────────
+// ── Arrival mode options ───────────────────────────────────────────────────
 const ARRIVAL_MODES = [
-  { value: 'walk_in',   label: 'Walk-in' },
+  { value: 'walk_in',   label: 'Walk-in'   },
   { value: 'ambulance', label: 'Ambulance' },
-  { value: 'referred',  label: 'Referred' },
-  { value: 'transfer',  label: 'Transfer' },
+  { value: 'referred',  label: 'Referred'  },
+  { value: 'transfer',  label: 'Transfer'  },
 ]
 
-// ── Clinical setting options ─────────────────────────────────────
+// ── Clinical setting options ───────────────────────────────────────────────
 const SETTINGS = [
   { value: 'er',   label: 'Emergency' },
-  { value: 'ward', label: 'Ward' },
-  { value: 'icu',  label: 'ICU' },
+  { value: 'ward', label: 'Ward'      },
+  { value: 'icu',  label: 'ICU'       },
 ]
 
-// ── Component ────────────────────────────────────────────────────
+// ── Component ──────────────────────────────────────────────────────────────
 export function TriageForm({ conditions }: { conditions: Condition[] }) {
-  const [severity, setSeverity]       = useState<SeverityLevel | ''>('')
-  const [arrivalMode, setArrivalMode] = useState('walk_in')
-  const [setting, setSetting]         = useState('er')
+  const [severity,     setSeverity]     = useState<SeverityLevel | ''>('')
+  const [arrivalMode,  setArrivalMode]  = useState('walk_in')
+  const [setting,      setSetting]      = useState('er')
   const [conditionKey, setConditionKey] = useState('chest_pain')
+  const [patientSex,   setPatientSex]   = useState<PatientSex>('unknown')
 
   const [state, action, pending] = useActionState<TriageState, FormData>(
     createEncounter,
@@ -96,12 +106,66 @@ export function TriageForm({ conditions }: { conditions: Condition[] }) {
     <form action={action} className="space-y-8">
 
       {/* Hidden inputs for controlled values */}
-      <input type="hidden" name="severity"      value={severity} />
-      <input type="hidden" name="arrival_mode"  value={arrivalMode} />
-      <input type="hidden" name="mode"          value={setting} />
+      <input type="hidden" name="severity"      value={severity}     />
+      <input type="hidden" name="arrival_mode"  value={arrivalMode}  />
+      <input type="hidden" name="mode"          value={setting}      />
       <input type="hidden" name="condition_key" value={conditionKey} />
+      <input type="hidden" name="patient_sex"   value={patientSex}   />
 
-      {/* ── 1. Severity ─────────────────────────────────── */}
+      {/* ── 0. Patient Info ─────────────────────────────────────────── */}
+      <section className="space-y-4">
+        <Label className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+          Patient Info
+        </Label>
+        <div className="grid grid-cols-2 gap-6">
+
+          {/* Age */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="patient_age"
+              className="text-xs font-medium text-muted-foreground"
+            >
+              Age <span className="text-muted-foreground/50">(years)</span>
+            </Label>
+            <Input
+              id="patient_age"
+              name="patient_age"
+              type="number"
+              min={1}
+              max={120}
+              placeholder="e.g. 54"
+              className="h-11 text-base bg-card border-border focus:border-primary"
+            />
+          </div>
+
+          {/* Biological Sex */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground">
+              Biological Sex
+            </Label>
+            <div className="grid grid-cols-2 gap-2">
+              {SEX_OPTIONS.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setPatientSex(s.value)}
+                  className={[
+                    'rounded-lg border py-2 text-xs font-medium transition-all',
+                    patientSex === s.value
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border bg-card text-muted-foreground hover:border-muted-foreground/50',
+                  ].join(' ')}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── 1. Severity ─────────────────────────────────────────────── */}
       <section className="space-y-3">
         <Label className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           Severity <span className="text-red-400">*</span>
@@ -126,9 +190,12 @@ export function TriageForm({ conditions }: { conditions: Condition[] }) {
         </div>
       </section>
 
-      {/* ── 2. Chief Complaint ──────────────────────────── */}
+      {/* ── 2. Chief Complaint ──────────────────────────────────────── */}
       <section className="space-y-2">
-        <Label htmlFor="chief_complaint" className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+        <Label
+          htmlFor="chief_complaint"
+          className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+        >
           Chief Complaint <span className="text-red-400">*</span>
         </Label>
         <Input
@@ -141,7 +208,7 @@ export function TriageForm({ conditions }: { conditions: Condition[] }) {
         />
       </section>
 
-      {/* ── 3. Condition ────────────────────────────────── */}
+      {/* ── 3. Condition ────────────────────────────────────────────── */}
       <section className="space-y-2">
         <Label className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           Clinical Condition
@@ -170,7 +237,7 @@ export function TriageForm({ conditions }: { conditions: Condition[] }) {
         </Select>
       </section>
 
-      {/* ── 4. Clinical Setting + Arrival Mode ──────────── */}
+      {/* ── 4. Clinical Setting + Arrival Mode ─────────────────────── */}
       <div className="grid grid-cols-2 gap-6">
 
         <section className="space-y-2">
@@ -221,14 +288,14 @@ export function TriageForm({ conditions }: { conditions: Condition[] }) {
 
       </div>
 
-      {/* ── Error ───────────────────────────────────────── */}
+      {/* ── Error ───────────────────────────────────────────────────── */}
       {state?.error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {state.error}
         </div>
       )}
 
-      {/* ── Submit ──────────────────────────────────────── */}
+      {/* ── Submit ──────────────────────────────────────────────────── */}
       <Button
         type="submit"
         disabled={pending || !severity}

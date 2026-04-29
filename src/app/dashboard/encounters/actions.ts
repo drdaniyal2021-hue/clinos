@@ -21,14 +21,20 @@ export async function createEncounter(
   const mode           = (formData.get('mode')            as string) || 'er'
   const severity       = (formData.get('severity')        as string)
   const arrivalMode    = (formData.get('arrival_mode')    as string) || 'walk_in'
+  const patientSex     = (formData.get('patient_sex')     as string) || 'unknown'
+  const patientAgeRaw  =  formData.get('patient_age')     as string | null
+  const patientAge     = patientAgeRaw ? parseInt(patientAgeRaw, 10) : null
 
-  // ── Validation ──────────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────────────
   if (!chiefComplaint) return { error: 'Chief complaint is required.' }
   if (!severity || !['critical', 'unstable', 'stable'].includes(severity)) {
     return { error: 'Please select a severity level.' }
   }
+  if (patientAge !== null && (isNaN(patientAge) || patientAge < 1 || patientAge > 120)) {
+    return { error: 'Patient age must be between 1 and 120.' }
+  }
 
-  // ── Create encounter ─────────────────────────────────────────────
+  // ── Create encounter ──────────────────────────────────────────────────────
   // Cast to 'any' on input: Supabase TS client returns 'never' for
   // Insert unless the Database interface includes Views/Functions/Enums.
   // We assert the result type explicitly instead.
@@ -44,6 +50,8 @@ export async function createEncounter(
       critical_mode:   severity === 'critical',
       current_step:    'history',
       status:          'active',
+      patient_age:     patientAge,
+      patient_sex:     patientSex,
     } as any)
     .select()
     .single() as { data: EncounterRow | null; error: { message: string } | null }
@@ -53,7 +61,7 @@ export async function createEncounter(
     return { error: encounterError?.message ?? 'Failed to create encounter.' }
   }
 
-  // ── Record triage step ───────────────────────────────────────────
+  // ── Record triage step ────────────────────────────────────────────────────
   await supabase
     .from('encounter_steps')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,6 +74,8 @@ export async function createEncounter(
         mode:            mode,
         severity:        severity,
         arrival_mode:    arrivalMode,
+        patient_age:     patientAge,
+        patient_sex:     patientSex,
       },
       completed_at: new Date().toISOString(),
     } as any)
